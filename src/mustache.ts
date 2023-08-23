@@ -1,22 +1,17 @@
 import { View } from './types'
-import { typeStr, escapeHtml } from './utils'
+import { escapeHtml } from './utils'
 import { Writer } from './writer'
 
 export class Mustache {
-  name = 'mustache.js'
-  version = '4.2.0'
+  name = 'mustacheee'
   tags = ['{{', '}}']
-  templateCache: any
-
   Writer = new Writer()
-
-  constructor() {}
 
   clearCache() {
     return this.Writer.clearCache()
   }
 
-  parse(template: string, tags: string[]) {
+  parse(template: string, tags: string[] = this.tags) {
     return this.Writer.parse(template, tags)
   }
 
@@ -27,13 +22,7 @@ export class Mustache {
     config?: Record<string, any>
   ) {
     if (typeof template !== 'string') {
-      throw new TypeError(
-        'Invalid template! Template should be a "string" ' +
-          'but "' +
-          typeStr(template) +
-          '" was given as the first ' +
-          'argument for mustache#render(template, view, partials)'
-      )
+      throw new TypeError('Invalid template! Template should be a "string" ')
     }
 
     return this.Writer.render(template, view, partials, config)

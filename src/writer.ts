@@ -1,13 +1,15 @@
 import { Context } from './context'
 import { escapeHtml, isFunction, parseTemplate } from './utils'
 
+import type { ExtToken, View, Session, ViewValue } from './types'
+
 export class Writer {
   templateCache = {
-    _cache: {},
-    set: function set(key, value) {
+    _cache: {} as Record<string, ExtToken[]>,
+    set: function set(key: string, value: ExtToken[]) {
       this._cache[key] = value
     },
-    get: function get(key) {
+    get: function get(key: string) {
       return this._cache[key]
     },
     clear: function clear() {
@@ -15,26 +17,22 @@ export class Writer {
     }
   }
 
-  constructor() {}
-
   clearCache() {
-    if (typeof this.templateCache !== 'undefined') {
-      this.templateCache.clear()
-    }
+    this.templateCache.clear()
   }
 
   parse(template: string, tags: string[]) {
     const cache = this.templateCache
     const cacheKey = template + ':' + tags.join(':')
-    const isCacheEnabled = typeof cache !== 'undefined'
+    const tokens = cache.get(cacheKey)
 
-    let tokens = isCacheEnabled ? cache.get(cacheKey) : undefined
+    if (tokens) return tokens
 
-    if (tokens == undefined) {
-      tokens = parseTemplate(template, tags)
-      isCacheEnabled && cache.set(cacheKey, tokens)
-    }
-    return tokens
+    const parsedTokens = parseTemplate(template, tags)
+
+    cache.set(cacheKey, parsedTokens)
+
+    return parsedTokens
   }
 
   render(
@@ -50,11 +48,11 @@ export class Writer {
   }
 
   renderTokens(
-    tokens: (number | string | (number | string)[])[],
-    context,
-    partials,
-    originalTemplate,
-    config
+    tokens: ExtToken[],
+    context: Context,
+    partials?: Record<string, any>,
+    originalTemplate?: string,
+    config: Record<string, any> = {}
   ) {
     let buffer = ''
 
@@ -80,12 +78,18 @@ export class Writer {
     return buffer
   }
 
-  renderSection(token, context, partials, originalTemplate, config) {
+  renderSection(
+    token: Session,
+    context: Context,
+    partials?: Record<string, any>,
+    originalTemplate?: string,
+    config: Record<string, any> = {}
+  ) {
     let buffer = ''
     let value = context.lookup(token[1])
     const self = this
 
-    function subRender(template) {
+    function subRender(template: string) {
       return self.render(template, context, partials, config)
     }
 
@@ -94,7 +98,7 @@ export class Writer {
     if (Array.isArray(value)) {
       for (let j = 0, valueLength = value.length; j < valueLength; ++j) {
         buffer += this.renderTokens(
-          token[4],
+          token[4]!,
           context.push(value[j]),
           partials,
           originalTemplate,
@@ -106,7 +110,13 @@ export class Writer {
       typeof value === 'string' ||
       typeof value === 'number'
     ) {
-      buffer += this.renderTokens(token[4], context.push(value), partials, originalTemplate, config)
+      buffer += this.renderTokens(
+        token[4]!,
+        context.push(value),
+        partials,
+        originalTemplate,
+        config
+      )
     } else if (isFunction(value)) {
       if (typeof originalTemplate !== 'string')
         throw new Error('Cannot use higher-order sections without the original template')
@@ -115,7 +125,7 @@ export class Writer {
 
       if (value != null) buffer += value
     } else {
-      buffer += this.renderTokens(token[4], context, partials, originalTemplate, config)
+      buffer += this.renderTokens(token[4]!, context, partials, originalTemplate, config)
     }
     return buffer
   }
@@ -156,22 +166,22 @@ export class Writer {
     }
   }
 
-  unescapedValue(token, context) {
+  unescapedValue(token: ExtToken, context: Context) {
     const value = context.lookup(token[1])
     if (value != null) return value
   }
 
-  escapedValue(token, context, config) {
+  escapedValue(token: ExtToken, context: Context, config: Record<string, any>) {
     const escape = this.getConfigEscape(config)
     const value = context.lookup(token[1])
     if (value != null) return typeof value === 'number' ? String(value) : escape(value)
   }
 
-  rawValue(token) {
+  rawValue(token: ExtToken) {
     return token[1]
   }
 
-  getConfigTags(config) {
+  getConfigTags(config?: Record<string, any>) {
     if (Array.isArray(config)) {
       return config
     } else if (config && typeof config === 'object') {
@@ -181,7 +191,7 @@ export class Writer {
     }
   }
 
-  getConfigEscape(config) {
+  getConfigEscape(config?: Record<string, any>) {
     if (config && typeof config === 'object' && !Array.isArray(config)) {
       return config.escape
     } else {

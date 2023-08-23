@@ -3,7 +3,7 @@ export class Scanner {
   tail: string = ''
   pos: number = 0
 
-  constructor(string) {
+  constructor(string: string) {
     this.string = string
     this.tail = string
   }
@@ -12,7 +12,7 @@ export class Scanner {
     return this.tail === ''
   }
 
-  scan(re) {
+  scan(re: RegExp) {
     const match = this.tail.match(re)
 
     if (!match || match.index !== 0) return ''
@@ -25,9 +25,9 @@ export class Scanner {
     return string
   }
 
-  scanUntil(re) {
-    let index = this.tail.search(re),
-      match
+  scanUntil(re: RegExp) {
+    let index = this.tail.search(re)
+    let match = ''
 
     switch (index) {
       case -1:

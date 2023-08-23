@@ -1,16 +1,18 @@
-type Token = string | number | (string | number)[]
+export type Token = [type: string, value: string, number, number]
+export type ExtToken = [type: string, value: string, number, number, string?, number?, boolean?]
+export type Session = [type: string, value: string, number, number, ExtToken[]?]
 
-type BasicViewValue = string | number | boolean | null | undefined
-type PureViewValue = BasicViewValue | Record<string, unknown>
-type Res = PureViewValue | Promise<PureViewValue>
+export type BasicViewValue = string | number | boolean | null | undefined
+export type PureViewValue = BasicViewValue | Record<string, unknown>
+export type Res = PureViewValue | Promise<PureViewValue>
 
-type PureRenderResult = string
-type RenderResult = PureRenderResult | Promise<PureRenderResult>
+export type PureRenderResult = string
+export type RenderResult = PureRenderResult | Promise<PureRenderResult>
 
-type Render = (text: string) => RenderResult
-type RenderValue = () => (text: string, render: Render) => Res
-type ViewValue = Res | (() => Res) | RenderValue
+export type Render = (text: string) => RenderResult
+export type RenderValue = () => (text: string, render: Render) => Res
+export type ViewValue = Res | (() => Res) | RenderValue
 
-export interface View {
+export type View = {
   [attr: string]: ViewValue
 }

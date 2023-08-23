@@ -1,31 +1,34 @@
 import { hasProperty, isFunction, primitiveHasOwnProperty } from './utils'
 
-export class Context {
-  view
-  cache
-  parent
+import type { View } from './types'
 
-  constructor(view, parentContext) {
+export class Context {
+  view: View
+  cache: Record<string, any>
+  parent?: Context
+
+  constructor(view: View, parentContext?: Context) {
     this.view = view
     this.cache = { '.': this.view }
     this.parent = parentContext
   }
 
-  push(view) {
+  push(view: View) {
     return new Context(view, this)
   }
 
-  lookup(name) {
+  lookup(name: string) {
     const cache = this.cache
 
     let value
+
     if (cache.hasOwnProperty(name)) {
       value = cache[name]
     } else {
-      let context = this,
-        intermediateValue,
-        names,
-        index,
+      let context: Context | undefined = this,
+        intermediateValue: View,
+        names: string[],
+        index: number,
         lookupHit = false
 
       while (context) {
@@ -35,16 +38,16 @@ export class Context {
           index = 0
 
           while (intermediateValue != null && index < names.length) {
-            if (index === names.length - 1)
+            if (index === names.length - 1) {
               lookupHit =
                 hasProperty(intermediateValue, names[index]) ||
                 primitiveHasOwnProperty(intermediateValue, names[index])
+            }
 
-            intermediateValue = intermediateValue[names[index++]]
+            intermediateValue = intermediateValue[names[index++]] as View
           }
         } else {
-          intermediateValue = context.view[name]
-
+          intermediateValue = context.view![name] as View
           lookupHit = hasProperty(context.view, name)
         }
 
