@@ -51,5 +51,8 @@
       "eslint"
     ]
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "mustache": "^4.2.0"
+  }
 }

@@ -1,11 +1,11 @@
-class Scanner {
-  string
-  tail
-  pos
+export class Scanner {
+  string: string = ''
+  tail: string = ''
+  pos: number = 0
+
   constructor(string) {
     this.string = string
     this.tail = string
-    this.pos = 0
   }
 
   eos() {

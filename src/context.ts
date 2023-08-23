@@ -1,8 +1,10 @@
+import { hasProperty, isFunction, primitiveHasOwnProperty } from './utils'
 
-class Context {
+export class Context {
   view
   cache
   parent
+
   constructor(view, parentContext) {
     this.view = view
     this.cache = { '.': this.view }
@@ -16,11 +18,11 @@ class Context {
   lookup(name) {
     const cache = this.cache
 
-    const value
+    let value
     if (cache.hasOwnProperty(name)) {
       value = cache[name]
     } else {
-      const context = this,
+      let context = this,
         intermediateValue,
         names,
         index,

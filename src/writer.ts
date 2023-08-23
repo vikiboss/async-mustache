@@ -1,19 +1,21 @@
-class Writer {
-  templateCache
-  constructor() {
-    this.templateCache = {
-      _cache: {},
-      set: function set(key, value) {
-        this._cache[key] = value
-      },
-      get: function get(key) {
-        return this._cache[key]
-      },
-      clear: function clear() {
-        this._cache = {}
-      }
+import { Context } from './context'
+import { escapeHtml, isFunction, parseTemplate } from './utils'
+
+export class Writer {
+  templateCache = {
+    _cache: {},
+    set: function set(key, value) {
+      this._cache[key] = value
+    },
+    get: function get(key) {
+      return this._cache[key]
+    },
+    clear: function clear() {
+      this._cache = {}
     }
   }
+
+  constructor() {}
 
   clearCache() {
     if (typeof this.templateCache !== 'undefined') {
@@ -21,11 +23,12 @@ class Writer {
     }
   }
 
-  parse(template, tags) {
+  parse(template: string, tags: string[]) {
     const cache = this.templateCache
-    const cacheKey = template + ':' + (tags || mustache.tags).join(':')
+    const cacheKey = template + ':' + tags.join(':')
     const isCacheEnabled = typeof cache !== 'undefined'
-    const tokens = isCacheEnabled ? cache.get(cacheKey) : undefined
+
+    let tokens = isCacheEnabled ? cache.get(cacheKey) : undefined
 
     if (tokens == undefined) {
       tokens = parseTemplate(template, tags)
@@ -34,18 +37,30 @@ class Writer {
     return tokens
   }
 
-  render(template, view, partials, config) {
+  render(
+    template: string,
+    view: Record<string, any>,
+    partials?: Record<string, any>,
+    config?: Record<string, any>
+  ) {
     const tags = this.getConfigTags(config)
     const tokens = this.parse(template, tags)
     const context = view instanceof Context ? view : new Context(view, undefined)
     return this.renderTokens(tokens, context, partials, template, config)
   }
 
-  renderTokens(tokens, context, partials, originalTemplate, config) {
-    const buffer = ''
+  renderTokens(
+    tokens: (number | string | (number | string)[])[],
+    context,
+    partials,
+    originalTemplate,
+    config
+  ) {
+    let buffer = ''
 
-    const token, symbol, value
-    for (const i = 0, numTokens = tokens.length; i < numTokens; ++i) {
+    let token, symbol, value
+
+    for (let i = 0, numTokens = tokens.length; i < numTokens; ++i) {
       value = undefined
       token = tokens[i]
       symbol = token[0]
@@ -66,9 +81,9 @@ class Writer {
   }
 
   renderSection(token, context, partials, originalTemplate, config) {
+    let buffer = ''
+    let value = context.lookup(token[1])
     const self = this
-    const buffer = ''
-    const value = context.lookup(token[1])
 
     function subRender(template) {
       return self.render(template, context, partials, config)
@@ -77,7 +92,7 @@ class Writer {
     if (!value) return
 
     if (Array.isArray(value)) {
-      for (const j = 0, valueLength = value.length; j < valueLength; ++j) {
+      for (let j = 0, valueLength = value.length; j < valueLength; ++j) {
         buffer += this.renderTokens(
           token[4],
           context.push(value[j]),
@@ -115,7 +130,7 @@ class Writer {
   indentPartial(partial, indentation, lineHasNonSpace) {
     const filteredIndentation = indentation.replace(/[^ \t]/g, '')
     const partialByNl = partial.split('\n')
-    for (const i = 0; i < partialByNl.length; i++) {
+    for (let i = 0; i < partialByNl.length; i++) {
       if (partialByNl[i].length && (i > 0 || !lineHasNonSpace)) {
         partialByNl[i] = filteredIndentation + partialByNl[i]
       }
@@ -147,10 +162,9 @@ class Writer {
   }
 
   escapedValue(token, context, config) {
-    const escape = this.getConfigEscape(config) || mustache.escape
+    const escape = this.getConfigEscape(config)
     const value = context.lookup(token[1])
-    if (value != null)
-      return typeof value === 'number' && escape === mustache.escape ? String(value) : escape(value)
+    if (value != null) return typeof value === 'number' ? String(value) : escape(value)
   }
 
   rawValue(token) {
@@ -163,7 +177,7 @@ class Writer {
     } else if (config && typeof config === 'object') {
       return config.tags
     } else {
-      return undefined
+      return ['{{', '}}']
     }
   }
 
@@ -171,7 +185,7 @@ class Writer {
     if (config && typeof config === 'object' && !Array.isArray(config)) {
       return config.escape
     } else {
-      return undefined
+      return escapeHtml
     }
   }
 }

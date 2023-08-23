@@ -1,34 +1,31 @@
+import { View } from './types'
 import { typeStr, escapeHtml } from './utils'
+import { Writer } from './writer'
 
-class Mustache {
-  name: string
-  version: string
-  tags: string[]
+export class Mustache {
+  name = 'mustache.js'
+  version = '4.2.0'
+  tags = ['{{', '}}']
   templateCache: any
 
-  Scanner?: Scanner
-  Context?: Context
-  Writer?: Writer
+  Writer = new Writer()
 
-  constructor() {
-    this.name = 'mustache.js'
-    this.version = '4.2.0'
-    this.tags = ['{{', '}}']
-
-    this.Scanner = undefined
-    this.Context = undefined
-    this.Writer = new Writer()
-  }
+  constructor() {}
 
   clearCache() {
-    return this.Writer?.clearCache()
+    return this.Writer.clearCache()
   }
 
-  parse(template, tags) {
-    return this.Writer?.parse(template, tags)
+  parse(template: string, tags: string[]) {
+    return this.Writer.parse(template, tags)
   }
 
-  render(template, view, partials, config) {
+  render(
+    template: string,
+    view: View,
+    partials?: Record<string, any>,
+    config?: Record<string, any>
+  ) {
     if (typeof template !== 'string') {
       throw new TypeError(
         'Invalid template! Template should be a "string" ' +
@@ -39,7 +36,7 @@ class Mustache {
       )
     }
 
-    return this.Writer?.render(template, view, partials, config)
+    return this.Writer.render(template, view, partials, config)
   }
 
   escape() {

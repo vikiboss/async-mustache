@@ -1,37 +1,12 @@
-export function isFunction(object) {
-  return typeof object === 'function'
-}
-
-export function typeStr(obj) {
-  return Array.isArray(obj) ? 'array' : typeof obj
-}
-
-export function escapeRegExp(string) {
-  return string.replace(/[\-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&')
-}
-
-export function hasProperty(obj, propName) {
-  return obj != null && typeof obj === 'object' && propName in obj
-}
-
-export function primitiveHasOwnProperty(primitive, propName) {
-  return (
-    primitive != null &&
-    typeof primitive !== 'object' &&
-    primitive.hasOwnProperty &&
-    primitive.hasOwnProperty(propName)
-  )
-}
+import { Scanner } from './scanner'
 
 export const regExpTest = RegExp.prototype.test
-export function testRegExp(re, string) {
-  return regExpTest.call(re, string)
-}
-
 export const nonSpaceRe = /\S/
-export function isWhitespace(string) {
-  return !testRegExp(nonSpaceRe, string)
-}
+export const whiteRe = /\s*/
+export const spaceRe = /\s+/
+export const equalsRe = /\s*=/
+export const curlyRe = /\s*\}/
+export const tagRe = /#|\^|\/|>|\{|&|=|!/
 
 export const entityMap = {
   '&': '&amp;',
@@ -44,22 +19,29 @@ export const entityMap = {
   '=': '&#x3D;'
 }
 
-export function escapeHtml(string) {
-  return String(string).replace(/[&<>"'`=\/]/g, function fromEntityMap(s) {
-    return entityMap[s]
-  })
+export const isFunction = object => typeof object === 'function'
+export const typeStr = obj => (Array.isArray(obj) ? 'array' : typeof obj)
+export const escapeRegExp = string => string.replace(/[\-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&')
+export const testRegExp = (re, string) => regExpTest.call(re, string)
+export const isWhitespace = string => !testRegExp(nonSpaceRe, string)
+export const escapeHtml = string => String(string).replace(/[&<>"'`=\/]/g, s => entityMap[s])
+
+export const hasProperty = (obj, propName) =>
+  obj != null && typeof obj === 'object' && propName in obj
+
+export const primitiveHasOwnProperty = (primitive, propName) => {
+  return (
+    primitive != null &&
+    typeof primitive !== 'object' &&
+    primitive.hasOwnProperty &&
+    primitive.hasOwnProperty(propName)
+  )
 }
 
-export const whiteRe = /\s*/
-export const spaceRe = /\s+/
-export const equalsRe = /\s*=/
-export const curlyRe = /\s*\}/
-export const tagRe = /#|\^|\/|>|\{|&|=|!/
-
-function parseTemplate(template, tags) {
+export function parseTemplate(template: string, tags: string[]) {
   if (!template) return []
 
-  const sections: string[] = []
+  const sections: (string | number | boolean)[][] = []
   const tokens: (string | number | boolean)[][] = []
 
   let spaces: number[] = []
@@ -95,11 +77,16 @@ function parseTemplate(template, tags) {
     closingCurlyRe = new RegExp('\\s*' + escapeRegExp('}' + tagsToCompile[1]))
   }
 
-  compileTags(tags || mustache.tags)
+  compileTags(tags)
 
   const scanner = new Scanner(template)
 
-  let start: string, type: string, value: string, chr: string, token: string, openSection: string
+  let start: number,
+    type: string,
+    value: string,
+    chr: string,
+    token: (string | number | boolean)[],
+    openSection: (string | number | boolean)[]
 
   while (!scanner.eos()) {
     start = scanner.pos
@@ -164,7 +151,7 @@ function parseTemplate(template, tags) {
     if (type === '#' || type === '^') {
       sections.push(token)
     } else if (type === '/') {
-      openSection = sections.pop()
+      openSection = sections.pop()!
 
       if (!openSection) throw new Error('Unopened section "' + value + '" at ' + start)
 
@@ -179,18 +166,19 @@ function parseTemplate(template, tags) {
 
   stripSpace()
 
-  openSection = sections.pop()
+  openSection = sections.pop()!
 
   if (openSection) throw new Error('Unclosed section "' + openSection[1] + '" at ' + scanner.pos)
 
   return nestTokens(squashTokens(tokens))
 }
 
-function squashTokens(tokens) {
-  const squashedTokens = []
+export function squashTokens(tokens) {
+  const squashedTokens: string[][] = []
 
-  const token, lastToken
-  for (const i = 0, numTokens = tokens.length; i < numTokens; ++i) {
+  let token: string[] = [],
+    lastToken: string[] = []
+  for (let i = 0, numTokens = tokens.length; i < numTokens; ++i) {
     token = tokens[i]
 
     if (token) {
@@ -207,13 +195,13 @@ function squashTokens(tokens) {
   return squashedTokens
 }
 
-function nestTokens(tokens) {
-  const nestedTokens = []
-  const collector = nestedTokens
-  const sections = []
+export function nestTokens(tokens: string[][]) {
+  const nestedTokens: (string | number)[][] = []
+  let collector = nestedTokens
+  let sections: (string | number | (number | string)[])[] = []
 
-  const token, section
-  for (const i = 0, numTokens = tokens.length; i < numTokens; ++i) {
+  let token: (string | number)[], section: string | number | (string | number)[]
+  for (let i = 0, numTokens = tokens.length; i < numTokens; ++i) {
     token = tokens[i]
 
     switch (token[0]) {
@@ -221,10 +209,11 @@ function nestTokens(tokens) {
       case '^':
         collector.push(token)
         sections.push(token)
+        // @ts-expect-error FIXME: this is a type error
         collector = token[4] = []
         break
       case '/':
-        section = sections.pop()
+        section = sections.pop()!
         section[5] = token[2]
         collector = sections.length > 0 ? sections[sections.length - 1][4] : nestedTokens
         break
