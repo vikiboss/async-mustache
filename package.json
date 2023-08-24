@@ -1,6 +1,6 @@
 {
   "name": "mustacheee",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "{{ obj.name }}` parser in JS/TS with async support.",
   "author": "Viki <hi@viki.moe> (https://github.com/vikiboss)",
   "homepage": "https://github.com/vikiboss/mustacheee",

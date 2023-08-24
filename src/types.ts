@@ -1,7 +1,7 @@
 export type Token = [string, string, number, number]
 export type ExtToken = [string, string, number, number, string?, number?, boolean?]
 
-export type BasicViewValue = string | number | boolean | null | undefined | unknown
+export type BasicViewValue = string | number | boolean | null | undefined
 export type PureViewValue = BasicViewValue | Record<string, unknown>
 export type Res = PureViewValue | Promise<PureViewValue>
 
