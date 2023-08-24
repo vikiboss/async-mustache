@@ -62,17 +62,22 @@ export function parseTemplate(template: string, tags: string | string[]) {
     nonSpace = false
   }
 
-  if (typeof tags === 'string') {
-    tags = tags.split(spaceRe, 2)
+  let openingTagRe: RegExp = new RegExp('__null__'),
+    closingTagRe: RegExp = new RegExp('__null__'),
+    closingCurlyRe: RegExp = new RegExp('__null__')
+
+  function compileTags(tagsToCompile: string | string[]) {
+    if (typeof tagsToCompile === 'string') tagsToCompile = tagsToCompile.split(spaceRe, 2)
+
+    if (!Array.isArray(tagsToCompile) || tagsToCompile.length !== 2)
+      throw new Error('Invalid tags: ' + tagsToCompile)
+
+    openingTagRe = new RegExp(escapeRegExp(tagsToCompile[0]) + '\\s*')
+    closingTagRe = new RegExp('\\s*' + escapeRegExp(tagsToCompile[1]))
+    closingCurlyRe = new RegExp('\\s*' + escapeRegExp('}' + tagsToCompile[1]))
   }
 
-  if (!Array.isArray(tags) || tags.length !== 2) {
-    throw new Error('Invalid tags: ' + tags)
-  }
-
-  let openingTagRe = new RegExp(escapeRegExp(tags[0]) + '\\s*')
-  let closingTagRe = new RegExp('\\s*' + escapeRegExp(tags[1]))
-  let closingCurlyRe = new RegExp('\\s*' + escapeRegExp('}' + tags[1]))
+  compileTags(tags)
 
   const scanner = new Scanner(template)
 
@@ -155,15 +160,7 @@ export function parseTemplate(template: string, tags: string | string[]) {
     } else if (type === 'name' || type === '{' || type === '&') {
       nonSpace = true
     } else if (type === '=') {
-      let values = []
-      if (typeof value === 'string') values = value.split(spaceRe, 2)
-      if (Array.isArray(value)) values = value
-
-      if (!Array.isArray(value) || value.length !== 2) throw new Error('Invalid tags: ' + value)
-
-      openingTagRe = new RegExp(escapeRegExp(value[0]) + '\\s*')
-      closingTagRe = new RegExp('\\s*' + escapeRegExp(value[1]))
-      closingCurlyRe = new RegExp('\\s*' + escapeRegExp('}' + value[1]))
+      compileTags(value)
     }
   }
 

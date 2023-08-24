@@ -52,7 +52,7 @@ export class Writer {
     context: Context,
     partials?: Record<string, any>,
     originalTemplate?: string,
-    config: Record<string, any> = {}
+    config?: Record<string, any>
   ) {
     let buffer = ''
 
@@ -69,7 +69,8 @@ export class Writer {
         value = this.renderInverted(token, context, partials, originalTemplate, config)
       else if (symbol === '>') value = this.renderPartial(token, context, partials, config)
       else if (symbol === '&') value = this.unescapedValue(token, context)
-      else if (symbol === 'name') value = this.escapedValue(token, context, config)
+      else if (symbol === 'name')
+        value = this.escapedValue(token, context, config as Record<string, any>)
       else if (symbol === 'text') value = this.rawValue(token)
 
       if (value !== undefined) buffer += value
@@ -83,7 +84,7 @@ export class Writer {
     context: Context,
     partials?: Record<string, any>,
     originalTemplate?: string,
-    config: Record<string, any> = {}
+    config?: Record<string, any>
   ) {
     let buffer = ''
     let value = context.lookup(token[1])
@@ -141,7 +142,7 @@ export class Writer {
     context: Context,
     partials?: Record<string, any>,
     originalTemplate?: string,
-    config: Record<string, any> = {}
+    config?: Record<string, any>
   ) {
     const value = context.lookup(token[1])
 
@@ -170,7 +171,7 @@ export class Writer {
     token: ExtToken,
     context: Context,
     partials?: Record<string, any> | Function,
-    config: Record<string, any> = {}
+    config?: Record<string, any>
   ) {
     if (!partials) return
     const tags = this.getConfigTags(config)
@@ -196,7 +197,7 @@ export class Writer {
     if (value != null) return value
   }
 
-  escapedValue(token: ExtToken, context: Context, config: Record<string, any>) {
+  escapedValue(token: ExtToken, context: Context, config?: Record<string, any>) {
     const escape = this.getConfigEscape(config)
     const value = context.lookup(token[1])
     if (value != null) return typeof value === 'number' ? String(value) : escape(value)
