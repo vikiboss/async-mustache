@@ -1,6 +1,5 @@
 export type Token = [type: string, value: string, number, number]
 export type ExtToken = [type: string, value: string, number, number, string?, number?, boolean?]
-export type Session = [type: string, value: string, number, number, ExtToken[]?]
 
 export type BasicViewValue = string | number | boolean | null | undefined
 export type PureViewValue = BasicViewValue | Record<string, unknown>

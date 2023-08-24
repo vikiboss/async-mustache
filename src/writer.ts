@@ -1,7 +1,7 @@
 import { Context } from './context'
 import { escapeHtml, isFunction, parseTemplate } from './utils'
 
-import type { ExtToken, View, Session, ViewValue } from './types'
+import type { ExtToken } from './types'
 
 export class Writer {
   templateCache = {
@@ -79,7 +79,7 @@ export class Writer {
   }
 
   renderSection(
-    token: Session,
+    token: ExtToken,
     context: Context,
     partials?: Record<string, any>,
     originalTemplate?: string,
@@ -98,7 +98,7 @@ export class Writer {
     if (Array.isArray(value)) {
       for (let j = 0, valueLength = value.length; j < valueLength; ++j) {
         buffer += this.renderTokens(
-          token[4]!,
+          token[4] as unknown as ExtToken[],
           context.push(value[j]),
           partials,
           originalTemplate,
@@ -111,7 +111,7 @@ export class Writer {
       typeof value === 'number'
     ) {
       buffer += this.renderTokens(
-        token[4]!,
+        token[4] as unknown as ExtToken[],
         context.push(value),
         partials,
         originalTemplate,
@@ -125,19 +125,37 @@ export class Writer {
 
       if (value != null) buffer += value
     } else {
-      buffer += this.renderTokens(token[4]!, context, partials, originalTemplate, config)
+      buffer += this.renderTokens(
+        token[4] as unknown as ExtToken[],
+        context,
+        partials,
+        originalTemplate,
+        config
+      )
     }
     return buffer
   }
 
-  renderInverted(token, context, partials, originalTemplate, config) {
+  renderInverted(
+    token: ExtToken,
+    context: Context,
+    partials?: Record<string, any>,
+    originalTemplate?: string,
+    config: Record<string, any> = {}
+  ) {
     const value = context.lookup(token[1])
 
     if (!value || (Array.isArray(value) && value.length === 0))
-      return this.renderTokens(token[4], context, partials, originalTemplate, config)
+      return this.renderTokens(
+        token[4] as unknown as ExtToken[],
+        context,
+        partials,
+        originalTemplate,
+        config
+      )
   }
 
-  indentPartial(partial, indentation, lineHasNonSpace) {
+  indentPartial(partial: string, indentation: string, lineHasNonSpace?: boolean) {
     const filteredIndentation = indentation.replace(/[^ \t]/g, '')
     const partialByNl = partial.split('\n')
     for (let i = 0; i < partialByNl.length; i++) {
@@ -148,11 +166,18 @@ export class Writer {
     return partialByNl.join('\n')
   }
 
-  renderPartial(token, context, partials, config) {
+  renderPartial(
+    token: ExtToken,
+    context: Context,
+    partials?: Record<string, any> | Function,
+    config: Record<string, any> = {}
+  ) {
     if (!partials) return
     const tags = this.getConfigTags(config)
 
-    const value = isFunction(partials) ? partials(token[1]) : partials[token[1]]
+    const value = isFunction(partials)
+      ? (partials as Function)(token[1])
+      : (partials as Record<string, any>)[token[1]]
     if (value != null) {
       let lineHasNonSpace = token[6]
       let indentedValue = value

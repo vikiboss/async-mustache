@@ -1,5 +1,5 @@
 import { Scanner } from './scanner'
-import { ExtToken, Session, Token } from './types'
+import { ExtToken } from './types'
 
 export const regExpTest = RegExp.prototype.test
 export const nonSpaceRe = /\S/
@@ -41,7 +41,7 @@ export const primitiveHasOwnProperty = (primitive: unknown, propName: string) =>
 export function parseTemplate(template: string, tags: string | string[]) {
   if (!template) return []
 
-  const sections: Session[] = []
+  const sections: ExtToken[] = []
   const tokens: ExtToken[] = []
 
   let spaces: number[] = []
@@ -70,13 +70,18 @@ export function parseTemplate(template: string, tags: string | string[]) {
     throw new Error('Invalid tags: ' + tags)
   }
 
-  const openingTagRe = new RegExp(escapeRegExp(tags[0]) + '\\s*')
-  const closingTagRe = new RegExp('\\s*' + escapeRegExp(tags[1]))
-  const closingCurlyRe = new RegExp('\\s*' + escapeRegExp('}' + tags[1]))
+  let openingTagRe = new RegExp(escapeRegExp(tags[0]) + '\\s*')
+  let closingTagRe = new RegExp('\\s*' + escapeRegExp(tags[1]))
+  let closingCurlyRe = new RegExp('\\s*' + escapeRegExp('}' + tags[1]))
 
   const scanner = new Scanner(template)
 
-  let start: number, type: string, value: string, chr: string, token: ExtToken, openSection: Session
+  let start: number,
+    type: string,
+    value: string,
+    chr: string,
+    token: ExtToken,
+    openSection: ExtToken
 
   while (!scanner.eos()) {
     start = scanner.pos
@@ -96,6 +101,7 @@ export function parseTemplate(template: string, tags: string | string[]) {
         }
 
         tokens.push(['text', chr, start, start + 1])
+
         start += 1
 
         if (chr === '\n') {
@@ -138,7 +144,7 @@ export function parseTemplate(template: string, tags: string | string[]) {
     tokens.push(token)
 
     if (type === '#' || type === '^') {
-      sections.push(token as Session)
+      sections.push(token)
     } else if (type === '/') {
       openSection = sections.pop()!
 
@@ -149,7 +155,15 @@ export function parseTemplate(template: string, tags: string | string[]) {
     } else if (type === 'name' || type === '{' || type === '&') {
       nonSpace = true
     } else if (type === '=') {
-      compileTags(value)
+      let values = []
+      if (typeof value === 'string') values = value.split(spaceRe, 2)
+      if (Array.isArray(value)) values = value
+
+      if (!Array.isArray(value) || value.length !== 2) throw new Error('Invalid tags: ' + value)
+
+      openingTagRe = new RegExp(escapeRegExp(value[0]) + '\\s*')
+      closingTagRe = new RegExp('\\s*' + escapeRegExp(value[1]))
+      closingCurlyRe = new RegExp('\\s*' + escapeRegExp('}' + value[1]))
     }
   }
 
@@ -173,8 +187,8 @@ export function squashTokens(tokens: ExtToken[]) {
     boolean?
   ][] = []
 
-  let token: Token,
-    lastToken: Token | undefined = undefined
+  let token: ExtToken,
+    lastToken: ExtToken | undefined = undefined
 
   for (let i = 0, numTokens = tokens.length; i < numTokens; ++i) {
     token = tokens[i]
@@ -196,9 +210,9 @@ export function squashTokens(tokens: ExtToken[]) {
 export function nestTokens(tokens: ExtToken[]) {
   const nestedTokens: ExtToken[] = []
   let collector = nestedTokens
-  let sections: Session[] = []
+  let sections: ExtToken[] = []
 
-  let token: ExtToken, section: Session
+  let token: ExtToken, section: ExtToken
   for (let i = 0, numTokens = tokens.length; i < numTokens; ++i) {
     token = tokens[i]
 
@@ -214,7 +228,10 @@ export function nestTokens(tokens: ExtToken[]) {
         section = sections.pop()!
 
         section[5] = token[2]
-        collector = sections.length > 0 ? (sections[sections.length - 1] as Token)[4] : nestedTokens
+        collector =
+          sections.length > 0
+            ? (sections[sections.length - 1][4] as unknown as ExtToken[])
+            : nestedTokens
 
         // console.log(JSON.stringify(collector,null,2))
         break
