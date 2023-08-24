@@ -21,33 +21,33 @@ export class Writer {
     this.templateCache.clear()
   }
 
-  parse(template: string, tags: string[]) {
+  async parse(template: string, tags: string[]) {
     const cache = this.templateCache
     const cacheKey = template + ':' + tags.join(':')
     const tokens = cache.get(cacheKey)
 
     if (tokens) return tokens
 
-    const parsedTokens = parseTemplate(template, tags)
+    const parsedTokens = await parseTemplate(template, tags)
 
     cache.set(cacheKey, parsedTokens)
 
     return parsedTokens
   }
 
-  render(
+  async render(
     template: string,
     view: Record<string, any>,
     partials?: Record<string, any>,
     config?: Record<string, any>
   ) {
     const tags = this.getConfigTags(config)
-    const tokens = this.parse(template, tags)
+    const tokens = await this.parse(template, tags)
     const context = view instanceof Context ? view : new Context(view, undefined)
-    return this.renderTokens(tokens, context, partials, template, config)
+    return await this.renderTokens(tokens, context, partials, template, config)
   }
 
-  renderTokens(
+  async renderTokens(
     tokens: ExtToken[],
     context: Context,
     partials?: Record<string, any>,
@@ -64,13 +64,13 @@ export class Writer {
       symbol = token[0]
 
       if (symbol === '#')
-        value = this.renderSection(token, context, partials, originalTemplate, config)
+        value = await this.renderSection(token, context, partials, originalTemplate, config)
       else if (symbol === '^')
-        value = this.renderInverted(token, context, partials, originalTemplate, config)
-      else if (symbol === '>') value = this.renderPartial(token, context, partials, config)
-      else if (symbol === '&') value = this.unescapedValue(token, context)
+        value = await this.renderInverted(token, context, partials, originalTemplate, config)
+      else if (symbol === '>') value = await this.renderPartial(token, context, partials, config)
+      else if (symbol === '&') value = await this.unescapedValue(token, context)
       else if (symbol === 'name')
-        value = this.escapedValue(token, context, config as Record<string, any>)
+        value = await this.escapedValue(token, context, config as Record<string, any>)
       else if (symbol === 'text') value = this.rawValue(token)
 
       if (value !== undefined) buffer += value
@@ -79,7 +79,7 @@ export class Writer {
     return buffer
   }
 
-  renderSection(
+  async renderSection(
     token: ExtToken,
     context: Context,
     partials?: Record<string, any>,
@@ -87,18 +87,18 @@ export class Writer {
     config?: Record<string, any>
   ) {
     let buffer = ''
-    let value = context.lookup(token[1])
+    let value = await context.lookup(token[1])
     const self = this
 
-    function subRender(template: string) {
-      return self.render(template, context, partials, config)
+    async function subRender(template: string) {
+      return await self.render(template, context, partials, config)
     }
 
     if (!value) return
 
     if (Array.isArray(value)) {
       for (let j = 0, valueLength = value.length; j < valueLength; ++j) {
-        buffer += this.renderTokens(
+        buffer += await this.renderTokens(
           token[4] as unknown as ExtToken[],
           context.push(value[j]),
           partials,
@@ -111,7 +111,7 @@ export class Writer {
       typeof value === 'string' ||
       typeof value === 'number'
     ) {
-      buffer += this.renderTokens(
+      buffer += await this.renderTokens(
         token[4] as unknown as ExtToken[],
         context.push(value),
         partials,
@@ -122,11 +122,11 @@ export class Writer {
       if (typeof originalTemplate !== 'string')
         throw new Error('Cannot use higher-order sections without the original template')
 
-      value = value.call(context.view, originalTemplate.slice(token[3], token[5]), subRender)
+      value = await value.call(context.view, originalTemplate.slice(token[3], token[5]), subRender)
 
       if (value != null) buffer += value
     } else {
-      buffer += this.renderTokens(
+      buffer += await this.renderTokens(
         token[4] as unknown as ExtToken[],
         context,
         partials,
@@ -137,17 +137,17 @@ export class Writer {
     return buffer
   }
 
-  renderInverted(
+  async renderInverted(
     token: ExtToken,
     context: Context,
     partials?: Record<string, any>,
     originalTemplate?: string,
     config?: Record<string, any>
   ) {
-    const value = context.lookup(token[1])
+    const value = await context.lookup(token[1])
 
     if (!value || (Array.isArray(value) && value.length === 0))
-      return this.renderTokens(
+      return await this.renderTokens(
         token[4] as unknown as ExtToken[],
         context,
         partials,
@@ -156,7 +156,7 @@ export class Writer {
       )
   }
 
-  indentPartial(partial: string, indentation: string, lineHasNonSpace?: boolean) {
+  async indentPartial(partial: string, indentation: string, lineHasNonSpace?: boolean) {
     const filteredIndentation = indentation.replace(/[^ \t]/g, '')
     const partialByNl = partial.split('\n')
     for (let i = 0; i < partialByNl.length; i++) {
@@ -167,7 +167,7 @@ export class Writer {
     return partialByNl.join('\n')
   }
 
-  renderPartial(
+  async renderPartial(
     token: ExtToken,
     context: Context,
     partials?: Record<string, any> | Function,
@@ -177,7 +177,7 @@ export class Writer {
     const tags = this.getConfigTags(config)
 
     const value = isFunction(partials)
-      ? (partials as Function)(token[1])
+      ? await (partials as Function)(token[1])
       : (partials as Record<string, any>)[token[1]]
     if (value != null) {
       let lineHasNonSpace = token[6]
@@ -185,21 +185,21 @@ export class Writer {
       const tagIndex = token[5]
       const indentation = token[4]
       if (tagIndex == 0 && indentation) {
-        indentedValue = this.indentPartial(value, indentation, lineHasNonSpace)
+        indentedValue = await this.indentPartial(value, indentation, lineHasNonSpace)
       }
-      const tokens = this.parse(indentedValue, tags)
-      return this.renderTokens(tokens, context, partials, indentedValue, config)
+      const tokens = await this.parse(indentedValue, tags)
+      return await this.renderTokens(tokens, context, partials, indentedValue, config)
     }
   }
 
-  unescapedValue(token: ExtToken, context: Context) {
-    const value = context.lookup(token[1])
+  async unescapedValue(token: ExtToken, context: Context) {
+    const value = await context.lookup(token[1])
     if (value != null) return value
   }
 
-  escapedValue(token: ExtToken, context: Context, config?: Record<string, any>) {
+  async escapedValue(token: ExtToken, context: Context, config?: Record<string, any>) {
     const escape = this.getConfigEscape(config)
-    const value = context.lookup(token[1])
+    const value = await context.lookup(token[1])
     if (value != null) return typeof value === 'number' ? String(value) : escape(value)
   }
 

@@ -38,7 +38,7 @@ export const primitiveHasOwnProperty = (primitive: unknown, propName: string) =>
   )
 }
 
-export function parseTemplate(template: string, tags: string | string[]) {
+export async function parseTemplate(template: string, tags: string | string[]) {
   if (!template) return []
 
   const sections: ExtToken[] = []
@@ -174,15 +174,7 @@ export function parseTemplate(template: string, tags: string | string[]) {
 }
 
 export function squashTokens(tokens: ExtToken[]) {
-  const squashedTokens: [
-    type: string,
-    value: string,
-    number,
-    number,
-    string?,
-    number?,
-    boolean?
-  ][] = []
+  const squashedTokens: ExtToken[] = []
 
   let token: ExtToken,
     lastToken: ExtToken | undefined = undefined

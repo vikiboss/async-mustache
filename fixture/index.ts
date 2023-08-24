@@ -1,12 +1,24 @@
 import mustache from '../src'
 
-const res = mustache.render('Hello {{name}} {{obj.value}} {{#get}}123{{obj.ok}}{{/get}}', {
-  name: null,
-  obj: {
-    value: undefined,
-    ok: false
-  },
-  get: () => (text, render) => 'get: ' + render(text)
-})
+const template = 'Hello {{name}}, {{asyncValue}}, {{#asyncRender}}asyncRender{{/asyncRender}}'
 
-console.log(res)
+const view = {
+  name: 'John',
+  asyncValue: async () => {
+    return Promise.resolve('async value')
+  },
+  asyncRender: () => {
+    return (text, render) => {
+      return new Promise(resolve => {
+        setTimeout(async () => {
+          resolve('async-' + (await render(text)) + '-async')
+        }, 1000)
+      })
+    }
+  }
+}
+
+// 1 second later: Hello John, async value, async-asyncRender-async
+mustache.render(template, view).then(output => {
+  console.log(output)
+})

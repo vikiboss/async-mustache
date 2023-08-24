@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "nodenext",
+    "target": "es2015",
+    "baseUrl": ".",
+    "module": "es2015",
     "moduleResolution": "bundler",
-
-    "strict": true
-  }
+    "strict": true,
+    "outDir": "lib",
+    "declaration": true
+  },
+  "include": ["src/**/*.ts"]
 }

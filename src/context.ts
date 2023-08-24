@@ -17,7 +17,7 @@ export class Context {
     return new Context(view, this)
   }
 
-  lookup(name: string) {
+  async lookup(name: string) {
     const cache = this.cache
 
     let value
@@ -62,7 +62,9 @@ export class Context {
       cache[name] = value
     }
 
-    if (isFunction(value)) value = value.call(this.view)
+    if (isFunction(value)) {
+      value = await value.call(this.view)
+    }
 
     return value
   }

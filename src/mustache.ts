@@ -11,11 +11,11 @@ export class Mustache {
     return this.Writer.clearCache()
   }
 
-  parse(template: string, tags: string[] = this.tags) {
-    return this.Writer.parse(template, tags)
+  async parse(template: string, tags: string[] = this.tags) {
+    return await this.Writer.parse(template, tags)
   }
 
-  render(
+  async render(
     template: string,
     view: View,
     partials?: Record<string, any>,
@@ -25,7 +25,7 @@ export class Mustache {
       throw new TypeError('Invalid template! Template should be a "string" ')
     }
 
-    return this.Writer.render(template, view, partials, config)
+    return await this.Writer.render(template, view, partials, config)
   }
 
   escape() {
