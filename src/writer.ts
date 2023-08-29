@@ -1,7 +1,7 @@
-import { Context } from './context'
-import { escapeHtml, isFunction, parseTemplate } from './utils'
+import { Context } from './context.js'
+import { escapeHtml, isFunction, parseTemplate } from './utils.js'
 
-import type { ExtToken } from './types'
+import type { ExtToken } from './types.js'
 
 export class Writer {
   templateCache = {

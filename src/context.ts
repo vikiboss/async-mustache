@@ -1,6 +1,6 @@
-import { hasProperty, isFunction, primitiveHasOwnProperty } from './utils'
+import { hasProperty, isFunction, primitiveHasOwnProperty } from './utils.js'
 
-import type { View } from './types'
+import type { View } from './types.js'
 
 export class Context {
   view: View

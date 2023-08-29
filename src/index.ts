@@ -1,2 +1,2 @@
-export * from './types'
-export { default } from './mustache'
+export * from './types.js'
+export { default } from './mustache.js'

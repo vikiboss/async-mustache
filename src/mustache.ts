@@ -1,6 +1,6 @@
-import { View } from './types'
-import { escapeHtml } from './utils'
-import { Writer } from './writer'
+import { View } from './types.js'
+import { escapeHtml } from './utils.js'
+import { Writer } from './writer.js'
 
 export class Mustache {
   name = 'mustacheee'

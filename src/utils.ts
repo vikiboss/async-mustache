@@ -1,5 +1,5 @@
-import { Scanner } from './scanner'
-import { ExtToken } from './types'
+import { Scanner } from './scanner.js'
+import { ExtToken } from './types.js'
 
 export const regExpTest = RegExp.prototype.test
 export const nonSpaceRe = /\S/
