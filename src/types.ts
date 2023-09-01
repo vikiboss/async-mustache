@@ -8,8 +8,9 @@ export type Res = PureViewValue | Promise<PureViewValue>
 export type PureRenderResult = string
 export type RenderResult = PureRenderResult | Promise<PureRenderResult>
 
-export type Render = (text: string) => RenderResult | Promise<RenderResult>
-export type RenderValue = () => (text: string, render: Render) => Res
+export type MusRender = (text: string) => RenderResult | Promise<RenderResult>
+export type RenderFunction = (text: string, render: MusRender) => Res
+export type RenderValue = () => RenderFunction
 export type ViewValue = Res | (() => Res) | RenderValue
 
 export type View = {
